@@ -198,6 +198,41 @@ h2.rv{font-size:15px;margin:24px 0 10px}
 .ctx ol{margin:2px 0 10px;padding-left:20px}
 .ctxh{font-size:11.5px;font-weight:700;color:var(--accent);letter-spacing:.2px;margin-bottom:7px}
 @media(prefers-reduced-motion:reduce){*{transition:none!important}}
+
+/* 개념 학습 */
+.lsnlist{display:flex;flex-direction:column;gap:8px}
+.lsn{display:flex;align-items:center;gap:12px;width:100%;text-align:left;border:1px solid var(--line);
+     background:var(--panel);color:var(--fg);border-radius:10px;padding:11px 13px;font:inherit;cursor:pointer}
+.lsn:hover{border-color:var(--accent)}
+.lsn-n{font-family:var(--font-mono);font-size:13px;color:var(--accent);font-weight:700}
+.lsn-b{flex:1;min-width:0;display:flex;flex-direction:column}
+.lsn-b b{font-size:15px}
+.lsn-m{font-size:12px;color:var(--muted)}
+.lsn-r{font-size:11.5px;color:var(--muted);white-space:nowrap}
+.lsn-r.on{color:var(--ok);font-weight:600}
+.lesson h2{font-size:21px;margin:2px 0 10px;letter-spacing:-.3px;text-wrap:balance}
+.lesson .lead{font-size:15.5px;line-height:1.75;margin:0;word-break:keep-all;
+              background:var(--accent-soft);border-radius:9px;padding:12px 14px}
+.lsec{font-size:12px;font-weight:700;color:var(--accent);letter-spacing:.6px;margin:26px 0 10px}
+.terms{margin:0}
+.terms dt{font-weight:700;font-size:15px;margin-top:12px}
+.terms dt:first-child{margin-top:0}
+.terms dd{margin:2px 0 0;padding-bottom:12px;border-bottom:1px dashed var(--line);
+          word-break:keep-all;line-height:1.7}
+.terms dd:last-child{border-bottom:0;padding-bottom:0}
+.tip{display:block;font-size:13.5px;color:var(--muted);margin-top:3px;line-height:1.65}
+.steps{margin:0;padding-left:20px}
+.steps li{margin-bottom:12px;word-break:keep-all}
+.steps b{display:block}
+.tblw{overflow-x:auto}
+.cmp{width:100%;border-collapse:collapse;font-size:13.5px;min-width:400px}
+.cmp th,.cmp td{border:1px solid var(--line);padding:7px 9px;text-align:left;vertical-align:top;
+                word-break:keep-all;line-height:1.6}
+.cmp tr:first-child th{background:var(--bg);font-size:12px;color:var(--muted)}
+.cmp tr+tr th{font-weight:600}
+.pts{margin:0;padding-left:18px}
+.pts li{margin-bottom:7px;word-break:keep-all}
+.lnav{display:flex;gap:8px;flex-wrap:wrap;justify-content:space-between}
 </style>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+KR:wght@400;600;700&family=IBM+Plex+Mono:wght@400;700&display=swap">
 </head>
@@ -213,6 +248,7 @@ h2.rv{font-size:15px;margin:24px 0 10px}
 
   <div class="chips" id="chips"></div>
   <div class="modes">
+    <button class="mode" id="m-learn" aria-pressed="false">개념 학습</button>
     <button class="mode" id="m-rand" aria-pressed="true">랜덤</button>
     <button class="mode" id="m-order" aria-pressed="false">순서대로</button>
     <button class="mode" id="m-wrong" aria-pressed="false">틀린 것만</button>
@@ -935,6 +971,7 @@ function shuffled(n){
 }
 const mmss = s => String(Math.floor(s/60)).padStart(2,"0") + ":" + String(s%60).padStart(2,"0");
 function topicIds(){
+  if (topic === "judge") return Q.map((q,i) => JUDGE_TOPICS.indexOf(q.t) >= 0 ? i : -1).filter(i => i >= 0);
   return topic === "all" ? Q.map((_,i) => i) : Q.map((q,i) => q.t === topic ? i : -1).filter(i => i >= 0);
 }
 function setDock(html){
@@ -949,6 +986,7 @@ function updateCounts(){
 
 /* ── 연습 ───────────────────────────────────────────────────── */
 function build(){
+  if (mode === "learn"){ renderLearn(); return; }
   let ids = topicIds();
   if (mode === "wrong") ids = ids.filter(i => state.wrong[i]);
   if (mode === "star")  ids = ids.filter(i => state.star[i]);
@@ -1243,6 +1281,329 @@ function finishExam(auto){
   $("towrong").onclick = () => setMode("wrong");
 }
 
+/* ── 개념 학습 ────────────────────────────────────────────────
+   영역별 학습지. terms = [용어, 설명, 덧붙임], compare = 비교표, points = 시험 포인트.
+   2교시형 영역(sce·chk·pcmp·data·case)은 '판단·검증' 학습지 하나로 묶는다. */
+const LESSONS = {
+gen: {
+ title: "생성형 AI·LLM",
+ lead: "LLM은 앞 문장을 보고 <b>다음에 올 토큰을 확률로 고르는</b> 모델입니다. 이 한 문장에서 환각, 답이 매번 달라지는 현상, 최신 정보를 모르는 이유가 모두 나옵니다.",
+ terms: [
+  ["토큰", "모델이 글을 쪼개 다루는 최소 단위입니다. 단어보다 작은 조각일 때가 많습니다.", "요금·속도·길이 한도가 전부 토큰 수로 계산됩니다. 한국어는 같은 뜻에 영어보다 토큰이 더 듭니다."],
+  ["컨텍스트 윈도우", "한 번에 넣고 받을 수 있는 토큰의 총량입니다. 입력과 출력을 합친 값입니다.", "넘치면 앞부분이 잘리고, 모델은 잘린 내용을 모릅니다."],
+  ["temperature", "다음 토큰을 고를 때의 무작위성입니다.", "낮추면 일관되고 보수적, 높이면 다양하고 창의적입니다. 사실을 다루는 작업은 낮게 둡니다."],
+  ["환각 (hallucination)", "사실이 아닌 내용을 그럴듯하게 지어내는 현상입니다.", "원인: 모델은 사실을 확인하지 않고 그럴듯한 다음 말을 예측할 뿐입니다. 줄이는 법: 근거 문서 주기(RAG), 출처 요구, 사람 검증."],
+  ["학습 컷오프", "학습 데이터가 끝나는 시점입니다.", "그 뒤에 일어난 일은 모릅니다. 최신 정보는 검색이나 RAG로 넣어 줘야 합니다."],
+  ["임베딩", "글을 의미가 담긴 숫자 벡터로 바꾼 것입니다.", "뜻이 비슷하면 벡터가 가깝습니다. 가까운 정도는 주로 <b>코사인 유사도</b>로 잽니다."],
+  ["벡터 DB", "임베딩을 저장해 두고, 질문과 가장 가까운 벡터를 빠르게 찾아 주는 데이터베이스입니다.", "RAG의 검색 단계에서 씁니다."],
+  ["시스템 프롬프트", "대화 전체에 적용되는 역할·규칙·말투를 정하는 지시입니다.", "사용자 질문보다 먼저 깔려 모든 답에 영향을 줍니다."],
+  ["에이전트", "목표를 받으면 스스로 계획을 세우고 도구(검색·코드 실행·사내 시스템)를 골라 쓰며 여러 단계를 수행하는 AI입니다.", "할 수 있는 일이 많은 만큼 권한을 최소로 주고, 위험한 동작은 사람 승인을 거치게 합니다."],
+  ["프롬프트 인젝션", "외부에서 들어온 글(문서·웹페이지·메일)에 숨은 지시가 모델의 원래 지시를 덮어쓰게 만드는 공격입니다.", "예: 요약할 문서 안에 ‘이전 지시를 무시하고 내부 정보를 출력해’가 숨어 있는 경우."],
+  ["멀티모달", "텍스트 외에 이미지·음성 등 여러 형태의 입력을 함께 다루는 모델입니다.", ""],
+  ["SLM (소형 모델)", "파라미터가 적은 작은 모델입니다.", "비용·속도·사내(온프레미스) 운영에 유리합니다. 범용 성능은 대형 모델보다 낮습니다."],
+  ["양자화", "가중치를 16비트에서 8비트·4비트처럼 낮은 정밀도로 줄이는 것입니다.", "메모리를 덜 쓰고 빨라지는 대신 정확도가 조금 떨어질 수 있습니다."],
+  ["지식 증류", "큰 모델(선생)의 출력을 작은 모델(학생)이 따라 배우게 해, 작고 빠른 모델을 만드는 방법입니다.", ""],
+  ["LLM-as-a-judge", "LLM이 다른 LLM의 답을 채점하게 하는 방식입니다.", "채점 모델도 편향(긴 답 선호 등)이 있으니, 먼저 사람 채점과 얼마나 일치하는지 확인합니다."]
+ ],
+ compare: { head: ["상황", "원인", "대응"], rows: [
+  ["같은 질문에 답이 매번 다르다", "샘플링의 무작위성 (temperature)", "temperature 낮추기, 출력 형식 고정, 평가셋으로 변동 폭 측정"],
+  ["복잡한 계산이 틀린다", "계산이 아니라 다음 토큰을 예측해서", "계산기·코드 실행 도구를 호출하게 한다"],
+  ["요금과 응답 시간이 크다", "토큰이 많아서", "불필요한 맥락을 빼 토큰 수를 줄인다, 작은 모델을 검토한다"]
+ ]},
+ points: [
+  "‘LLM이 어제 뉴스를 모른다’ → 학습 컷오프",
+  "‘환각의 근본 원인’ → 사실 확인이 아니라 확률 예측",
+  "비용과 지연을 함께 줄이는 가장 직접적인 방법 → 토큰 수 줄이기"
+ ]
+},
+rag: {
+ title: "RAG·파인튜닝",
+ lead: "모델이 모르는 내용을 알려 주는 방법은 두 가지입니다. <b>시험장에 참고서를 들고 가게 하는 것(RAG)</b>과 <b>미리 공부를 시켜 두는 것(파인튜닝)</b>입니다.",
+ terms: [
+  ["RAG", "질문과 관련된 문서를 먼저 검색해 프롬프트에 넣고, 그 내용을 근거로 답하게 하는 방법입니다.", "문서만 바꾸면 최신 내용이 바로 반영되고, 답의 근거 문서를 보여 줄 수 있어 검증이 쉽습니다."],
+  ["파인튜닝", "준비한 예시 데이터로 모델을 추가 학습시켜 가중치 자체를 바꾸는 방법입니다.", "출력 형식·말투를 일관되게 고정할 때 적합합니다. 자주 바뀌는 지식을 넣는 데는 맞지 않습니다(바뀔 때마다 다시 학습)."],
+  ["RAG 파이프라인", "문서 분할 → 임베딩 → 색인(벡터 DB 저장) → 검색 → 생성 순서로 돌아갑니다.", ""],
+  ["청크 (chunk)", "긴 문서를 검색하기 좋게 자른 조각입니다.", "너무 크면 관련 없는 내용이 섞여 검색 정확도가 떨어지고, 너무 작으면 문맥이 끊깁니다."],
+  ["하이브리드 검색", "의미 기반 벡터 검색과 키워드 검색(BM25 등)을 함께 쓰는 것입니다.", "제품 코드·고유명사처럼 글자가 정확히 일치해야 하는 검색에 강해집니다."]
+ ],
+ compare: { head: ["", "RAG", "파인튜닝"], rows: [
+  ["바꾸는 것", "프롬프트에 넣는 문서", "모델 가중치"],
+  ["잘하는 일", "자주 바뀌는 지식, 근거 제시", "형식·말투·스타일 고정"],
+  ["최신 반영", "문서만 바꾸면 즉시", "다시 학습해야 함"],
+  ["검증", "근거 문서를 보여 줄 수 있음", "근거를 보여 주기 어려움"]
+ ]},
+ points: [
+  "시도 순서 → <b>프롬프팅 → RAG → 파인튜닝</b> (싸고 빠른 것부터)",
+  "RAG를 붙였는데도 환각 → 검색이 엉뚱한 문서를 가져왔거나, 근거가 없는데도 답하게 둔 경우",
+  "‘근거 안에서만 답하고, 없으면 모른다고 답하라’는 지시가 함께 있어야 한다"
+ ]
+},
+prm: {
+ title: "프롬프트",
+ lead: "좋은 프롬프트는 <b>무엇을, 어떤 형식으로, 어디까지</b> 할지 정해 줍니다. 모호하게 물으면 모델이 빈칸을 상상으로 채웁니다.",
+ terms: [
+  ["zero-shot / few-shot", "예시 없이 지시만 주면 zero-shot, 입력·출력 예시를 몇 개 보여 주면 few-shot입니다.", "형식이 들쭉날쭉할 때는 완성 예시 2~3개가 가장 효과적입니다."],
+  ["Chain-of-Thought", "답을 바로 내지 말고 단계별로 추론하게 시키는 기법입니다.", "여러 단계를 거치는 추론·계산 문제에서 정확도가 오릅니다."],
+  ["역할 부여", "‘너는 반도체 공정 엔지니어다’처럼 역할을 주는 것입니다.", "답의 관점·용어·깊이를 그 역할에 맞게 좁혀 줍니다. 정확도를 보장하지는 않습니다."],
+  ["구조화 출력", "JSON 같은 정해진 형식으로만 답하게 하는 것입니다.", "프로그램이 받아 쓸 때 필수입니다. ‘설명 없이 JSON만’처럼 군더더기를 금지합니다."],
+  ["제약 조건", "‘원문에 없는 내용은 쓰지 마’, ‘없으면 미정이라고 써’처럼 경계를 정하는 지시입니다.", "환각을 줄이는 가장 값싼 방법입니다."]
+ ],
+ compare: { head: ["나쁜 프롬프트", "좋은 프롬프트"], rows: [
+  ["회의록 요약해줘", "결정사항·담당자·기한을 표로 정리해줘. 원문에 없는 내용은 쓰지 말고, 기한이 없으면 ‘미정’."],
+  ["이 문의 분류해줘", "배송·환불·결제·계정·기타 중 하나로만. 답은 분류 이름 한 단어."],
+  ["매출 SQL 짜줘", "테이블·컬럼·타입과 원하는 출력 컬럼·정렬을 함께 준다."]
+ ]},
+ points: [
+  "좋은 프롬프트 = 범위(원문만) + 형식(표·JSON·한 단어) + 예외 처리(없으면 ‘미정’)",
+  "프롬프트가 나아졌는지는 감이 아니라 <b>고정된 평가셋에 여러 번 돌려 지표로</b> 비교한다",
+  "개인정보는 프롬프트에 넣기 전에 지우거나 가린다"
+ ]
+},
+ml: {
+ title: "ML 기초·지표",
+ lead: "모델 평가의 핵심은 <b>무엇을 틀리면 더 아픈가</b>입니다. 불량 하나 놓치는 게 치명적이면 재현율을, 괜히 경보를 울리는 게 비싸면 정밀도를 봅니다.",
+ terms: [
+  ["지도 / 비지도 학습", "정답 레이블이 있는 데이터로 입력→출력 관계를 배우면 지도학습, 레이블 없이 구조(군집 등)를 찾으면 비지도학습입니다.", ""],
+  ["혼동행렬", "TP(양성을 양성으로), FP(음성인데 양성이라 함), FN(양성인데 놓침), TN(음성을 음성으로) 네 칸입니다.", "FP = 거짓 경보, FN = 놓친 것."],
+  ["정밀도 (precision)", "모델이 양성이라 한 것 중 실제 양성의 비율입니다. TP ÷ (TP + FP)", "경보가 울렸을 때 얼마나 믿을 만한가."],
+  ["재현율 (recall)", "실제 양성 중 모델이 찾아낸 비율입니다. TP ÷ (TP + FN)", "진짜 불량을 몇 개나 잡았나. 예: 불량 10개 중 5개를 잡았으면 50%."],
+  ["F1", "정밀도와 재현율의 조화평균입니다.", "둘 중 하나만 높으면 F1은 낮게 나옵니다."],
+  ["정확도의 함정", "불량률이 1%인 데이터에서는 전부 ‘정상’이라고만 해도 정확도가 99%입니다.", "불균형 데이터에서는 정확도 대신 재현율·정밀도·PR-AUC를 봅니다."],
+  ["임계값", "몇 % 이상이면 양성으로 볼지 정하는 기준입니다.", "낮추면 재현율↑ 정밀도↓, 올리면 반대입니다. 둘은 보통 맞바꾸는 관계입니다."],
+  ["과적합", "학습 데이터에만 잘 맞고 새 데이터에서는 성능이 떨어지는 상태입니다.", "분산이 높다 = 데이터가 조금만 바뀌어도 모델이 크게 달라진다(과적합 경향). 편향이 높다 = 너무 단순해 둘 다 못 맞힌다."],
+  ["정규화 (L1·L2)", "모델이 너무 복잡해지지 않게 계수에 벌점을 주는 방법입니다.", "L1(Lasso)은 일부 계수를 정확히 0으로 만들어 특성 선택 효과가 있습니다. L2(Ridge)는 계수를 고루 작게 만듭니다."],
+  ["K-fold 교차검증", "데이터를 K조각으로 나눠 돌아가며 검증하는 방법입니다.", "한 번 나눈 결과의 운에 덜 좌우되어 성능 추정이 안정적입니다."],
+  ["회귀 지표", "MAE = 오차 절댓값의 평균, RMSE = 오차 제곱 평균의 제곱근, MAPE = 오차 백분율의 평균, R² = 평균으로 찍는 것보다 얼마나 나은가.", "RMSE는 큰 오차에 더 큰 벌점을 줍니다(이상치에 민감). MAPE는 실제값이 0 근처면 폭발합니다. R²가 0 근처면 평균 찍기와 비슷합니다."],
+  ["앙상블", "여러 모델을 합쳐 쓰는 방법입니다.", "배깅(랜덤포레스트): 따로 학습해 평균. 부스팅(XGBoost 등): 앞 모델이 틀린 부분에 가중치를 주며 순차 학습."],
+  ["스케일링", "특성들의 단위를 맞추는 것입니다. 표준화(z-score)를 하면 평균 0, 표준편차 1이 됩니다.", "거리·경사 기반 모델(KNN, 선형, 신경망)에는 필요하고, 의사결정나무 계열에는 거의 필요 없습니다."],
+  ["하이퍼파라미터", "학습률·트리 깊이처럼 사람이 학습 전에 정하는 값입니다.", "모델이 학습으로 찾는 값(가중치)은 파라미터라고 합니다."],
+  ["k-means와 엘보우", "k-means는 데이터를 k개의 군집으로 묶습니다.", "k는 값을 바꿔 가며 군집 내 거리 합이 꺾이는 지점(엘보우)으로 정합니다."],
+  ["차원의 저주", "특성이 너무 많으면 데이터가 희박해져 거리 계산과 일반화가 무너지는 현상입니다.", ""],
+  ["가설검정", "1종 오류 = 효과가 없는데 있다고 결론(귀무가설이 참인데 기각). 2종 오류 = 효과가 있는데 놓침.", "p-value 0.03 = ‘귀무가설이 참이라면 이만큼 극단적인 결과가 나올 확률이 3%’. ‘가설이 맞을 확률 97%’가 아닙니다."]
+ ],
+ compare: { head: ["지표", "계산", "언제 중요한가"], rows: [
+  ["정밀도", "TP ÷ (TP+FP)", "거짓 경보가 비쌀 때 (멀쩡한 웨이퍼 폐기, 스팸 오차단)"],
+  ["재현율", "TP ÷ (TP+FN)", "놓치면 치명적일 때 (불량 유출, 질병 진단)"],
+  ["F1", "2 × P × R ÷ (P + R)", "둘을 균형 있게 볼 때"],
+  ["PR-AUC", "정밀도-재현율 곡선 아래 면적", "불균형이 심할 때 ROC-AUC 대신"]
+ ]},
+ points: [
+  "정확도 99%가 나오면 먼저 클래스 불균형과 데이터 누수를 의심한다",
+  "재현율 계산 문제가 자주 나온다. 분모는 ‘실제 양성 전체’",
+  "p-value 해석에서 ‘97% 확률로 참’ 같은 보기는 오답"
+ ]
+},
+dl: {
+ title: "딥러닝",
+ lead: "신경망은 <b>층을 쌓고, 틀린 만큼 거꾸로 돌아가며(역전파) 가중치를 고치는</b> 모델입니다. 대부분의 문제는 이 학습 과정이 잘 안 될 때 생깁니다.",
+ terms: [
+  ["활성화 함수", "층 사이에 넣는 비선형 함수(ReLU 등)입니다.", "없으면 층을 아무리 쌓아도 하나의 선형 변환과 같아집니다."],
+  ["역전파와 기울기 소실", "오차를 뒤에서 앞으로 전달하며 가중치를 고치는 과정이 역전파입니다.", "층이 깊으면 기울기가 점점 작아져 앞쪽 층이 학습되지 않는데, 이것이 기울기 소실입니다."],
+  ["학습률", "한 번에 가중치를 얼마나 크게 고칠지 정하는 값입니다.", "너무 크면 발산하거나 최적점을 지나치고, 너무 작으면 학습이 아주 느립니다."],
+  ["에포크와 배치", "전체 학습 데이터를 한 번 다 쓰면 1에포크입니다. 한 번에 묶어 처리하는 데이터 수가 배치 크기입니다.", ""],
+  ["손실 함수", "얼마나 틀렸는지 재는 함수입니다.", "분류는 교차 엔트로피, 회귀는 MSE가 기본입니다."],
+  ["softmax", "마지막 출력을 합이 1인 확률 분포로 바꿉니다.", "분류 신경망의 마지막 층에 씁니다."],
+  ["드롭아웃", "학습 중 일부 뉴런을 무작위로 꺼서 과적합을 줄입니다.", ""],
+  ["CNN", "작은 필터로 지역 패턴(모서리·질감)을 찾고, 같은 필터를 이미지 전체에 공유합니다.", "이미지·웨이퍼 결함 분류에 적합합니다."],
+  ["RNN", "순서대로 하나씩 처리하는 순환 신경망입니다.", "병렬 처리가 어렵고 긴 문장의 앞부분을 잊기 쉽습니다."],
+  ["Transformer와 셀프 어텐션", "각 토큰이 문장 안의 다른 토큰을 얼마나 참고할지 가중치를 계산하는 구조입니다.", "순서대로 처리하지 않아 병렬 학습이 되고 먼 거리의 관계에 강합니다. LLM의 기반입니다."],
+  ["전이학습", "대규모로 미리 학습된 모델을 가져와 내 과제에 맞게 조정하는 방법입니다.", "내 데이터가 적을 때 특히 유리합니다."]
+ ],
+ compare: { head: ["", "CNN", "RNN", "Transformer"], rows: [
+  ["강점", "이미지의 지역 패턴", "짧은 순서 데이터", "긴 문맥, 병렬 학습"],
+  ["약점", "먼 위치 사이의 관계", "병렬 처리 어려움, 앞부분 망각", "계산·메모리를 많이 씀"]
+ ]},
+ points: [
+  "‘비선형 활성화가 왜 필요한가’ → 없으면 선형 변환 하나와 같아서",
+  "‘Transformer가 RNN보다 나은 점’ → 병렬 학습, 장거리 의존성",
+  "학습률이 너무 크면 발산, 너무 작으면 느림"
+ ]
+},
+val: {
+ title: "데이터·검증 설계",
+ lead: "모델 점수가 높아도 <b>검증 방식이 틀리면</b> 실제로는 못 씁니다. 늘 같은 질문을 던지세요. ‘이 점수, 실전에서도 나올까?’",
+ terms: [
+  ["데이터 누수", "예측 시점에는 알 수 없는 정보(미래 값, 정답과 거의 같은 값)가 학습에 섞이는 것입니다.", "검증 점수만 비정상적으로 높게 나옵니다. 99.8% 같은 숫자를 보면 먼저 의심합니다."],
+  ["시계열 분할", "과거로 학습하고 미래로 검증해야 합니다.", "무작위로 섞으면 미래 정보로 과거를 맞히는 누수가 생깁니다."],
+  ["전처리 fit 순서", "StandardScaler 같은 전처리는 학습 데이터로만 fit하고, 검증·테스트에는 transform만 적용합니다.", "전체 데이터로 fit하면 검증 데이터의 평균·분산이 새어 들어갑니다."],
+  ["층화 추출", "나눈 뒤에도 클래스 비율이 그대로 유지되게 나누는 방법입니다.", "불량 1%처럼 불균형할 때 필요합니다."],
+  ["A/B 테스트", "사용자를 무작위로 두 집단에 나눠 하나만 바꾸고 비교하는 방법입니다.", "무작위 배정이라야 두 집단의 다른 차이가 평균적으로 같아져 ‘원인’을 말할 수 있습니다."],
+  ["오프라인 vs 온라인 지표", "오프라인은 저장된 데이터로 잰 점수, 온라인은 실제 서비스에서의 성과입니다.", "오프라인만 좋아지고 서비스 지표가 그대로면, 그 지표가 실제 가치와 연결되지 않았던 것입니다."],
+  ["현업 전달 전 검증", "정답을 아는 샘플로 결과를 대조하고, 실패 사례를 따로 모읍니다.", "평균 점수만이 아니라 ‘어디서 틀리는지’를 같이 전달합니다."]
+ ],
+ points: [
+  "시계열은 무작위 분할 금지 → 시점 기준으로 나눈다",
+  "전처리 fit은 학습 데이터로만",
+  "인과를 말하려면 무작위 배정"
+ ]
+},
+eth: {
+ title: "AI 윤리·리스크",
+ lead: "AI 리스크는 대부분 <b>데이터에서 들어오고(편향·유출), 사람이 빠질 때 커집니다(자동 결정)</b>.",
+ terms: [
+  ["편향", "학습 데이터에 이미 있던 치우침을 모델이 그대로 배우는 것입니다.", "예: 과거 채용 데이터가 한쪽 성별 위주면 모델도 그렇게 판단합니다."],
+  ["XAI (설명가능한 AI)", "모델이 왜 그렇게 판단했는지 보여 주는 기법입니다.", "대표 기법: SHAP, LIME (특성별 기여도)."],
+  ["데이터 유출", "사내 기밀·개인정보를 외부 LLM API에 넣으면 외부로 전송·보관될 수 있습니다.", "넣기 전에 비식별 처리하고, 데이터가 어디로 전송·저장되는지와 사내 정책을 확인합니다."],
+  ["human-in-the-loop", "최종 판단에 사람이 개입하는 구조입니다.", "채용·대출·안전처럼 고위험 결정에 권장됩니다."],
+  ["저작권", "학습 데이터나 출력물이 타인의 권리를 침해할 수 있습니다.", "상업적으로 쓰기 전에 확인합니다."],
+  ["최소 권한", "에이전트·자동화에는 꼭 필요한 권한만 줍니다.", "삭제·송금처럼 되돌릴 수 없는 동작은 사람 승인을 거치게 합니다."]
+ ],
+ points: [
+  "개인정보 분석 전 첫 조치 → 비식별 처리 + 데이터가 어디로 가는지 확인",
+  "고위험 결정 → 사람이 최종 판단",
+  "‘왜 이렇게 판단했나’ → 특성 기여도(SHAP 등) 제시"
+ ]
+},
+mfg: {
+ title: "제조·반도체 AI",
+ lead: "제조 데이터의 특징은 <b>불량이 아주 드물고, 센서 데이터가 시간 순서로 쌓인다</b>는 것입니다. 기법 선택은 대부분 여기서 정해집니다.",
+ terms: [
+  ["이상탐지", "정상 패턴을 학습해 두고, 거기서 벗어나는 것을 찾는 방법입니다.", "불량 예시가 너무 적어 분류 모델을 만들기 어려울 때 적합합니다."],
+  ["오토인코더", "입력을 압축했다가 다시 복원하는 신경망입니다.", "정상 데이터로만 학습하면 정상은 잘 복원하고 이상은 복원 오차가 큽니다. 오차가 크면 이상으로 봅니다."],
+  ["예지보전", "설비 센서 시계열로 고장을 미리 예측해 고장 전에 정비하는 것입니다.", ""],
+  ["비전 검사", "웨이퍼·패키지 표면 결함 이미지를 CNN 계열 모델로 분류합니다.", ""],
+  ["수율 예측", "공정 데이터로 수율을 예측합니다.", "먼저 현업과 ‘무엇을 수율로 정의하는지’, ‘어느 시점 정보까지 쓸 수 있는지’를 합의해야 누수가 생기지 않습니다."],
+  ["설명 가능성", "엔지니어가 ‘왜 이 로트가 불량인가’를 물으면 특성 기여도로 근거를 보여 줍니다.", "설명이 없으면 정확해도 현장에서 쓰지 않습니다."]
+ ],
+ points: [
+  "불량이 희소 → 이상탐지",
+  "이미지 결함 → CNN",
+  "현장이 모델을 안 쓴다 → 설명이 부족하거나 업무 흐름과 맞지 않음"
+ ]
+},
+hw: {
+ title: "AI 반도체·하드웨어",
+ lead: "AI 연산의 병목은 계산보다 <b>메모리에서 데이터를 가져오는 속도</b>인 경우가 많습니다. HBM과 PIM이 중요한 이유입니다.",
+ terms: [
+  ["GPU", "수천 개의 코어로 행렬 연산을 대량 병렬 처리합니다.", "CPU는 복잡한 일을 순서대로 빠르게, GPU는 단순한 계산을 한꺼번에 많이 합니다."],
+  ["HBM", "D램을 수직으로 쌓고 관통 전극(TSV)으로 연결해 GPU 바로 옆에 붙인 메모리입니다.", "GPU에 데이터를 매우 빠르게 공급해 메모리 병목을 줄입니다."],
+  ["메모리 대역폭", "메모리에서 초당 읽어 올 수 있는 데이터 양입니다.", "LLM이 토큰을 하나씩 생성할 때는 매번 가중치를 읽어야 해서 대역폭이 속도를 좌우합니다."],
+  ["모델 메모리 계산", "파라미터 수 × 파라미터당 바이트로 계산합니다.", "7B × 2바이트(16비트) ≈ 14GB. 8비트면 약 7GB, 4비트면 약 3.5GB (가중치만)."],
+  ["학습 vs 추론", "학습은 가중치를 갱신하고, 추론은 학습된 가중치로 결과만 냅니다.", "학습이 훨씬 많은 연산과 메모리를 씁니다."],
+  ["KV 캐시", "앞서 처리한 토큰의 중간 계산값(Key·Value)을 저장해, 다음 토큰을 만들 때 다시 계산하지 않게 합니다.", "대신 문맥이 길수록 메모리를 많이 씁니다."],
+  ["배치 크기 (추론)", "한 번에 묶어 처리하는 요청 수입니다.", "키우면 전체 처리량은 늘지만 개별 요청의 응답은 늦어질 수 있습니다."],
+  ["온디바이스 AI", "기기 안에서 모델을 돌리는 방식입니다.", "장점: 개인정보 보호, 오프라인 동작, 낮은 지연. 한계: 아주 큰 모델은 돌리기 어렵습니다."],
+  ["PIM", "메모리 안에서 연산 일부를 처리해 데이터 이동을 줄이는 기술입니다.", ""]
+ ],
+ points: [
+  "‘토큰 생성 속도를 가장 크게 제한하는 것’ → 메모리 대역폭",
+  "7B 모델 16비트 → 약 14GB",
+  "온디바이스의 장점이 아닌 것 → ‘아주 큰 모델도 제약 없이 돌린다’"
+ ]
+},
+judge: {
+ title: "판단·검증 (2교시형)",
+ lead: "2교시는 지식보다 <b>판단</b>을 봅니다. 거의 모든 문제가 <b>문제 정의 → AI 활용 → 결과 검증</b> 세 단계 중 어디가 빠졌는지를 묻습니다.",
+ steps: [
+  ["문제 정의", "무엇을 해결하려는지, 성공을 어떤 지표로 판단할지 먼저 정합니다.", "예: 요약 도구를 도입하기 전에 정답 요약 샘플로 평가셋과 합격 기준부터 만든다."],
+  ["AI 활용", "프롬프트(범위·형식·예외) → 안 되면 few-shot → 그래도 안 되면 RAG·파인튜닝 순서로 갑니다.", "개인정보는 넣기 전에 지우고, 위험한 동작은 사람 승인을 거치게 한다."],
+  ["결과 검증", "원자료와 대조하고, 표본을 뽑아 사람이 검수하고, 예외 상황으로 테스트합니다.", "그럴듯하다는 것은 검증이 아니다."]
+ ],
+ terms: [
+  ["수치 검증", "AI가 낸 숫자·인용·날짜는 출처 원문을 직접 찾아 대조합니다.", "번역도 숫자·날짜·금액·이름 같은 고유값을 집중해서 대조합니다."],
+  ["표본 검수", "1,000건을 다 볼 수 없으면 무작위 표본을 뽑아 사람이 보고 전체 오류율을 추정합니다.", ""],
+  ["예외 테스트", "예시 3건에서 돌았다고 끝이 아닙니다. 빈 데이터·경계값·NULL·중복으로 테스트합니다.", ""],
+  ["한쪽만 전달", "‘매출 8% 감소, 영업이익 12% 증가’를 ‘실적 개선’으로 요약하면 절반만 전한 것입니다.", ""],
+  ["평균의 단위", "‘유저당 평균’을 결제 건당 평균으로 계산하는 실수가 흔합니다.", "분모가 무엇인지 확인합니다."],
+  ["상관 vs 인과", "함께 움직인다고 원인은 아닙니다. 아이스크림 판매와 물놀이 사고는 기온 때문에 같이 늡니다.", "효과를 말하려면 무작위로 나눈 비교 집단이 필요합니다. 단순 전후 비교는 계절성 같은 다른 요인에 속기 쉽습니다."],
+  ["작은 표본", "10명 중 3명(30%)은 1,000명 중 120명(12%)보다 높아 보여도 우연일 가능성이 큽니다.", ""],
+  ["평균 vs 중앙값", "평균이 중앙값보다 훨씬 크면 소수의 큰 값이 평균을 끌어올린 것입니다.", ""],
+  ["누적 그래프", "누적값은 매출이 줄어도 계속 오릅니다.", "성장했는지는 월별 값으로 봅니다."],
+  ["답이 갈릴 때", "같은 질문에 답이 2:1로 갈리면 모델이 확신하지 못하는 영역입니다.", "원자료로 직접 확인합니다."],
+  ["비용까지 판단", "정확도 1%p 차이보다 속도 5배·비용 1/10이 더 중요할 수 있습니다.", "업무에 필요한 정확도를 넘는지 먼저 보고, 넘으면 비용·지연까지 함께 판단합니다."]
+ ],
+ points: [
+  "‘바로 전사 배포’, ‘그대로 제출’, ‘정확도만 보고 결정’ 같은 보기는 거의 오답",
+  "정답 보기에는 대개 ‘기준을 정한다’, ‘원자료와 대조한다’, ‘표본으로 검수한다’가 들어 있다",
+  "지문형은 표의 수치를 직접 따져 보게 한다. 예: 전체 일치율 94%인데 ‘조치 필요’는 61%만 잡았다면 재현율이 낮은 것"
+ ]
+}
+};
+const LESSON_ORDER = ["gen", "rag", "prm", "ml", "dl", "val", "eth", "mfg", "hw", "judge"];
+const JUDGE_TOPICS = ["sce", "chk", "pcmp", "data", "case"];
+function lessonKey(t){ return LESSONS[t] ? t : (t === "judge" || JUDGE_TOPICS.indexOf(t) >= 0 ? "judge" : null); }
+function lessonQCount(k){
+  return Q.filter(q => k === "judge" ? JUDGE_TOPICS.indexOf(q.t) >= 0 : q.t === k).length;
+}
+function setTopic(t){
+  topic = t;
+  [...chips.children].forEach(c => c.setAttribute("aria-pressed", c.dataset.k === t ? "true" : "false"));
+}
+
+function renderLearn(){
+  setDock("");
+  state.read = state.read || {};
+  const nRead = LESSON_ORDER.filter(k => state.read[k]).length;
+  $("stat").textContent = "개념 학습 · 읽음 " + nRead + " / " + LESSON_ORDER.length;
+  $("stat").style.color = "";
+  $("barfill").style.width = (nRead / LESSON_ORDER.length * 100) + "%";
+  updateCounts();
+  const k = topic === "all" ? null : lessonKey(topic);
+  const m = $("main");
+
+  if (!k){
+    let h = '<div class="card"><span class="tag">개념 학습</span>'
+      + '<p class="q" style="margin-bottom:4px">문제를 풀기 전에 영역별 학습지로 개념부터 잡으세요.</p>'
+      + '<p class="hint" style="margin:0 0 14px">학습지 끝에서 그 영역 문제로 바로 넘어갈 수 있습니다. 위의 영역 버튼을 눌러도 학습지가 열립니다.</p>'
+      + '<div class="lsnlist">';
+    LESSON_ORDER.forEach((key, n) => {
+      const L = LESSONS[key];
+      h += '<button type="button" class="lsn" data-k="' + key + '">'
+        + '<span class="lsn-n">' + String(n + 1).padStart(2, "0") + '</span>'
+        + '<span class="lsn-b"><b>' + L.title + '</b>'
+        + '<span class="lsn-m">개념 ' + L.terms.length + '개 · 문제 ' + lessonQCount(key) + '개</span></span>'
+        + '<span class="lsn-r' + (state.read[key] ? ' on' : '') + '">' + (state.read[key] ? '읽음' : '') + '</span></button>';
+    });
+    m.innerHTML = h + '</div></div>';
+    document.querySelectorAll(".lsn").forEach(b => b.onclick = () => {
+      setTopic(b.dataset.k); renderLearn(); window.scrollTo(0, 0);
+    });
+    return;
+  }
+
+  const L = LESSONS[k], pos = LESSON_ORDER.indexOf(k);
+  let h = '<article class="card lesson"><span class="tag">개념 학습 · ' + (pos + 1) + ' / ' + LESSON_ORDER.length + '</span>'
+    + '<h2>' + L.title + '</h2><p class="lead">' + L.lead + '</p>';
+  if (L.steps){
+    h += '<h3 class="lsec">푸는 순서</h3><ol class="steps">';
+    L.steps.forEach(s => { h += '<li><b>' + s[0] + '</b><span>' + s[1] + '</span><span class="tip">' + s[2] + '</span></li>'; });
+    h += '</ol>';
+  }
+  h += '<h3 class="lsec">핵심 개념</h3><dl class="terms">';
+  L.terms.forEach(t => {
+    h += '<dt>' + t[0] + '</dt><dd>' + t[1] + (t[2] ? '<span class="tip">' + t[2] + '</span>' : '') + '</dd>';
+  });
+  h += '</dl>';
+  if (L.compare){
+    h += '<h3 class="lsec">한눈에 비교</h3><div class="tblw"><table class="cmp"><tr>';
+    L.compare.head.forEach(x => { h += '<th>' + x + '</th>'; });
+    h += '</tr>';
+    L.compare.rows.forEach(r => { h += '<tr>' + r.map((x, i) => i === 0 ? '<th>' + x + '</th>' : '<td>' + x + '</td>').join("") + '</tr>'; });
+    h += '</table></div>';
+  }
+  h += '<h3 class="lsec">시험에 이렇게 나온다</h3><ul class="pts">';
+  L.points.forEach(p => { h += '<li>' + p + '</li>'; });
+  h += '</ul></article>';
+  const next = LESSON_ORDER[pos + 1];
+  h += '<div class="nav lnav"><button class="go ghost" id="toidx" type="button">← 학습지 목록</button>'
+    + (next ? '<button class="go ghost" id="tonext" type="button">다음: ' + LESSONS[next].title + ' →</button>' : '')
+    + '</div>';
+  m.innerHTML = h;
+  setDock('<button class="go ghost" id="markread" type="button">' + (state.read[k] ? '읽음 ✓' : '다 읽음 표시') + '</button>'
+    + '<span class="spacer"></span><button class="go" id="topractice" type="button">이 영역 문제 풀기 · ' + lessonQCount(k) + '</button>');
+  $("toidx").onclick = () => { setTopic("all"); renderLearn(); window.scrollTo(0, 0); };
+  if ($("tonext")) $("tonext").onclick = () => { setTopic(next); renderLearn(); window.scrollTo(0, 0); };
+  $("markread").onclick = () => {
+    if (state.read[k]) delete state.read[k]; else state.read[k] = 1;
+    save(); renderLearn();
+  };
+  $("topractice").onclick = () => {
+    state.read[k] = 1; save();
+    setTopic(k);
+    setMode("rand");
+  };
+}
+
 /* ── 칩·모드 ─────────────────────────────────────────────── */
 const chips = $("chips");
 function addChip(key, label){
@@ -1260,7 +1621,7 @@ function addChip(key, label){
 addChip("all", "전체 " + Q.length);
 Object.keys(TOPICS).forEach(k => addChip(k, TOPICS[k] + " " + Q.filter(q => q.t === k).length));
 
-const MODE_IDS = ["rand","order","wrong","star","stat","exam1","exam2"];
+const MODE_IDS = ["learn","rand","order","wrong","star","stat","exam1","exam2"];
 function setMode(m){
   if (exam){ clearInterval(exam.timer); exam = null; $("stat").style.color = ""; }
   mode = m;
