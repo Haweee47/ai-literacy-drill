@@ -62,9 +62,7 @@ h1{font-size:16px;margin:0;letter-spacing:-.2px;font-weight:700}
        transition:width .25s ease}
 
 /* 영역 칩 */
-.chips{display:flex;gap:6px;overflow-x:auto;padding-block:10px;
-       scrollbar-width:none;-ms-overflow-style:none}
-.chips::-webkit-scrollbar{display:none}
+.chips{display:flex;flex-wrap:wrap;gap:6px;padding-block:10px}
 .chip{flex:0 0 auto;border:1px solid var(--line);background:var(--panel);color:var(--fg);
       border-radius:999px;padding:5px 13px;font:inherit;font-size:12.5px;cursor:pointer;
       white-space:nowrap}
