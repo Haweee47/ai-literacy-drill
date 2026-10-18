@@ -16,7 +16,7 @@ URL = "https://haweee47.github.io/ai-literacy-drill/"
 
 TITLE = "AI 리터러시 드릴"
 DESC = ("생성형 AI·ML 개념부터 AI 결과를 검증하는 판단력까지. "
-        "155문항, 긴 지문 세트 8개, 실전 모드와 해설을 담았습니다. 설치·로그인 없이 바로 풉니다.")
+        "173문항, 긴 지문 세트 8개, 실전 모드와 해설을 담았습니다. 설치·로그인 없이 바로 풉니다.")
 
 HEAD = f"""<!doctype html>
 <html lang="ko">
@@ -28,7 +28,7 @@ HEAD = f"""<!doctype html>
 <link rel="canonical" href="{URL}">
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="{TITLE}">
-<meta property="og:title" content="{TITLE} — 155문항 실전 연습">
+<meta property="og:title" content="{TITLE} — 173문항 실전 연습">
 <meta property="og:description" content="{DESC}">
 <meta property="og:url" content="{URL}">
 <meta property="og:image" content="{URL}og.png">
